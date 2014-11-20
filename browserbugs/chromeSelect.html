@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<title>Chrome select bug</title>
+
+</head>
+<body>
+
+<p>Use up and down arrows to change selected option.</p>
+<select id="s" multiple autofocus></select>
+
+<style>
+#s {
+  width: 300px;
+  height: 300px;
+}
+</style>
+
+<script>
+
+var select = document.getElementById('s');
+function addOption(value, selected) {
+  var option = document.createElement('option');
+  option.selected = selected
+  option.innerHTML = value;
+  select.insertBefore(option, select.firstChild);
+}
+
+for (var i = 0; i < 10; i++) {
+  addOption('Option ' + i, i == 6);
+}
+
+var addedOptionCount = 0;
+window.setInterval(function() {
+  addOption('Added option ' + addedOptionCount++, false);
+}, 4000);
+
+</script>
+
+</body>
+</html>
