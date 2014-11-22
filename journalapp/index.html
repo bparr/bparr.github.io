@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html ng-app="journalApp">
+<!-- TODO better name than journalApp and journalController??? -->
+<head>
+
+<meta charset="utf-8">
+<title>Journal App</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.1/angular.min.js"></script>
+
+</head>
+<body>
+
+<div ng-controller="journalController">
+
+<form ng-submit="saveIdea()">
+<input id="idea" name="idea" type="text" autocorrect="on" autofocus
+       ng-model="idea" ng-change="onIdeaChange()"
+       ng-keydown="handleKeyDown($event)"
+       ng-keyup="handleKeyUp($event)"
+       ng-blur="focusEventTarget($event)"></input>
+</form>
+<!-- TODO original idea was to have input box on top of past. So enter seems
+          more correct. But for prototype, just putting select underneath
+          and reverse ordering the ideas. Look into original idea!
+          Yeah, this is annoying to read reversed. Look into scrolling the
+          last option into view with scrollIntoView(). Maybe first check to see
+          if last option is visible before appending new option, and using that
+          to decide if should scroll new idea into view. Or have placeholder
+          last option to check against?? -->
+<!-- TODO Consider optimizing the orderBy? Just get rid of it?? -->
+<!-- TODO android select seems to only allow selecting one item with keyboard
+          but does show selected item in box. Can wrap that value? so doesn't
+          get cut off? Optimize it's CSS. -->
+<select id="past-ideas" multiple ng-model="selectedPastIdeas"
+        ng-options="idea.getUiValue() for idea in pastIdeas | filter:currentSearch | orderBy:selectOrder:true"></select>
+
+<div id="notification-container"></div>
+
+</div>
+
+
+<style>
+#past-ideas {
+  height: 400px;
+  width: 100%;
+}
+#idea {
+  width: 100%;
+}
+</style>
+<script>
+// TODO convert to Closure style? With x['y'] syntax instead of x.y?
+// TODO add tests soon!
+var LOCAL_STORAGE_KEY = 'ideas';
+var pastIdeas = document.getElementById('past-ideas');
+var notificationContainer = document.getElementById('notification-container');
+
+
+// TODO remove intermediate idea object by moving serialize method here.
+function Idea(value, now) {
+  this.value_ = value;
+  // TODO change how past-ideas ordering is done so this can be private?
+  this.now = now;
+}
+
+Idea.prototype.getUiValue = function() {
+  // TODO make more interesting by completing '##p' and '##s'.
+  return this.value_;
+};
+
+function createIdeaFromObject(obj) {
+  return new Idea(obj.value, obj.now);
+}
+
+
+
+function createRemoveElementFn(element) {
+  return function() {
+    element.parentNode.removeChild(element);
+    element = null;
+  };
+}
+
+function notifyUser() {
+  // TODO generalize non-display "notification".
+  // TODO maybe add "ghost" notification to display. (light box impl)
+  window.navigator.vibrate(100);
+  // TODO get working on Android! I tried the "one audio element" idea
+  //     but there was a long delay between enter and play.
+  var audioNotification = document.createElement('audio');
+  audioNotification.autoplay = 'true';
+  // TODO try just one <audio> and just reseting to start here, no remove.
+  audioNotification.src = 'message-new-instant.ogg';
+  // TODO handle error cases.
+  // TODO is it ok to add event listener before adding to dom?
+  audioNotification.addEventListener('ended',
+      createRemoveElementFn(audioNotification));
+  notificationContainer.appendChild(audioNotification);
+}
+
+// TODO any consequences/caveats with putting angular + other in one <script>?
+// TODO use 'controller as' instead of throwing everything on $scope?
+angular.module('journalApp', [])
+  .controller('journalController', function($scope, $timeout) {
+    // TODO remove redundant code here and in saveIdea function.
+    $scope.pastIdeas = (JSON.parse(
+        localStorage.getItem(LOCAL_STORAGE_KEY)) || []).map(function(x) {
+        // TODO nit this could just be simplified to map(createIdeaFromObject).
+        return createIdeaFromObject(x)
+      });
+    $scope.selectedPastIdeas = [];
+    $scope.selectOrder = 'now';
+    $scope.currentSearch = '';
+    var lastSavedSearch = '';
+
+    $scope.saveIdea = function() {
+      notifyUser();
+
+      var ideaValue = $scope.idea;
+      $scope.idea = '';
+      if (!ideaValue) {
+        return;
+      }
+      // TODO create Idea class.
+      var idea = {now: Date.now(), value: ideaValue};
+      if (/##s\b/.test(ideaValue) || /##selected\b/.test(ideaValue)) {
+        // TODO expose selected in UI.
+        // TODO handle case where want to reference two different selected ideas
+        //     with two separate ##s or w/e.
+        idea.selected = $scope.selectedPastIdeas.map(function(pastIdea) {
+          // TODO convert to a better identifier than 'now'. GUID?
+          return pastIdea.now;
+        });
+      }
+
+      // TODO implement non-consecutive word search instead of default filter?
+      // TODO seing searches (especially '/') isn't all too helpful??
+      if (ideaValue[0] == '/') {
+        lastSavedSearch = ideaValue.slice(1);
+        $scope.currentSearch = lastSavedSearch;
+      }
+
+      // TODO better handle multiple tabs editing the same local storage!
+      // TODO change this to just listen for on storage change events.
+      var allIdeas = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+      allIdeas.push(idea);
+      var allIdeasString = JSON.stringify(allIdeas);
+      localStorage.setItem(LOCAL_STORAGE_KEY, allIdeasString);
+
+      if (ideaValue == '##allideas') {
+        $scope.idea = allIdeasString;
+      }
+
+      // TODO find way to persist the current past idea selection!
+      // NOTE: Don't duplicate reference in pastIdeas, as angularJs will
+      //     reasonably treat it as one idea. For example, if you select both,
+      //     only top one will actually get selected.
+      // TODO this can easily be cleaned up! Especially with allIdeas creation
+      //     and storage in localStorage (store as map??).
+      var pastIdeasIds = {};
+      $scope.pastIdeas.forEach(function(x) {
+        pastIdeasIds[x.now] = 1;
+      });
+      allIdeas.forEach(function(x) {
+        if (!pastIdeasIds[x.now]) {
+          // TODO this is not in chronological order! OK for now because
+          //     angular sorts.
+          $scope.pastIdeas.push(createIdeaFromObject(x));
+        }
+      });
+    };
+
+    // TODO look into cross browser compatible way for keyCode constants.
+    // TODO figure out if other keycodes should go in here. One tradeoff was
+    //     for home/end. End might not be useful in every context, but scroll
+    //     to top (bottom... the most recent) could be! Hmm.
+    //     Maybe just '##p' could bring it into scroll??? HMMMM.
+
+    // NOTE: These do not fire 'keypress' events. Only 'keydown' and 'keyup'.
+    var VERTICAL_NAVIGATION_KEYCODES = {
+      33: true, // Page up.
+      34: true, // Page down.
+      38: true, // Up arrow.
+      40: true  // Down arrow.
+    };
+    var maybeForwardToSelector = function(e) {
+      if (!VERTICAL_NAVIGATION_KEYCODES[e.keyCode]) {
+        return false;
+      }
+
+      e.preventDefault();
+      $timeout(function() {
+        // TODO this probably doesn't work well cross browser.
+        // TODO test to see if latency in other browsers.
+        // TODO the lag is really annoying when hold down key. Compare to when
+        //     <select> has focus.
+        // TODO UGH. There is a <select> bug where if insert idea (e.g. save
+        //     an idea then hit up arrow, it jumps two options instead of one.
+        //     Figure out if angularjs bug or something and find fix!
+        //     Wow. It's super borked for "search" filtering.
+        pastIdeas.dispatchEvent(new e.constructor(e.type, e));
+      }, 0, false);
+      return true;
+    };
+
+    $scope.handleKeyDown = function(e) {
+      maybeForwardToSelector(e);
+    };
+
+    var shiftKeyCount = 0;
+    /**
+     * Amount of times need to click shift key to have it notify (e.g. vibrate
+     * on mobile).
+     */
+    var SHIFT_PRESSES_TO_NOTIFY = 3;
+    $scope.handleKeyUp = function(e) {
+      if (maybeForwardToSelector(e)) {
+        return;
+      }
+
+      // TODO notify if hold down shift key?? Might cause unexpected notifys.
+      if (e.keyCode == 16 /* Shift key */) {
+        shiftKeyCount++;
+        if (shiftKeyCount >= SHIFT_PRESSES_TO_NOTIFY) {
+          shiftKeyCount = 0;
+          notifyUser();
+        }
+      } else {
+        shiftKeyCount = 0;
+      }
+    };
+
+    // TODO figure out if this is actually a useful feature.
+    // TODO does this fire at the correct times??
+    $scope.onIdeaChange = function() {
+      // TODO is there a better location for this? Is this run too much?
+      $scope.currentSearch = lastSavedSearch;
+      if ($scope.idea && $scope.idea[0] == '/') {
+        $scope.currentSearch = $scope.idea.slice(1);
+      }
+    };
+
+    $scope.focusEventTarget = function(e) {
+      e.target.focus();
+    };
+  });
+
+
+</script>
+
+</body>
+</html>
