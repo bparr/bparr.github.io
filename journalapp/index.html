@@ -84,7 +84,9 @@ function createRemoveElementFn(element) {
 function notifyUser() {
   // TODO generalize non-display "notification".
   // TODO maybe add "ghost" notification to display. (light box impl)
-  window.navigator.vibrate(100);
+  if (window.navigator.vibrate) {
+    window.navigator.vibrate(100);
+  }
   // TODO get working on Android! I tried the "one audio element" idea
   //     but there was a long delay between enter and play.
   var audioNotification = document.createElement('audio');
