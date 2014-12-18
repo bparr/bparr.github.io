@@ -13,7 +13,8 @@
 <div ng-controller="journalController">
 
 <form ng-submit="saveIdea()">
-<input id="idea" name="idea" type="text" autocorrect="on" autofocus
+<input id="idea" name="idea" type="text"
+       autocorrect="on" autofocus autocomplete="off"
        ng-model="idea" ng-change="onIdeaChange()"
        ng-keydown="handleKeyDown($event)"
        ng-keyup="handleKeyUp($event)"
