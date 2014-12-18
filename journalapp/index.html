@@ -84,7 +84,10 @@ function createRemoveElementFn(element) {
 
 function parseLocalStorage() {
   var storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return storedValue ? JSON.parse(storedValue) : [];
+  // TODO better handle error case. I'm currently too scared of
+  //     overwriting ideas if for some reason they can't be parsed.
+  var parsedValue = storedValue ? JSON.parse(storedValue) : null;
+  return parsedValue || [];
 }
 
 
