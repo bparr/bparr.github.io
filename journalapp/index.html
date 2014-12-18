@@ -81,6 +81,12 @@ function createRemoveElementFn(element) {
   };
 }
 
+function parseLocalStorage() {
+  var storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
+  return storedValue ? JSON.parse(storedValue) : [];
+}
+
+
 function notifyUser() {
   // TODO generalize non-display "notification".
   // TODO maybe add "ghost" notification to display. (light box impl)
@@ -105,11 +111,10 @@ function notifyUser() {
 angular.module('journalApp', [])
   .controller('journalController', function($scope, $timeout) {
     // TODO remove redundant code here and in saveIdea function.
-    $scope.pastIdeas = (JSON.parse(
-        localStorage.getItem(LOCAL_STORAGE_KEY)) || []).map(function(x) {
-        // TODO nit this could just be simplified to map(createIdeaFromObject).
-        return createIdeaFromObject(x)
-      });
+    $scope.pastIdeas = parseLocalStorage().map(function(x) {
+      // TODO nit this could just be simplified to map(createIdeaFromObject).
+      return createIdeaFromObject(x)
+    });
     $scope.selectedPastIdeas = [];
     $scope.selectOrder = 'now';
     $scope.currentSearch = '';
@@ -144,7 +149,7 @@ angular.module('journalApp', [])
 
       // TODO better handle multiple tabs editing the same local storage!
       // TODO change this to just listen for on storage change events.
-      var allIdeas = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+      var allIdeas = parseLocalStorage();
       allIdeas.push(idea);
       var allIdeasString = JSON.stringify(allIdeas);
       localStorage.setItem(LOCAL_STORAGE_KEY, allIdeasString);
