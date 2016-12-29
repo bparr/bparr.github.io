@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Commands (merge all into one file, then aggregate ideas):
+# rm finalfile.txt && for f in data/*; do (cat "${f}"; echo) >> finalfile.txt; done
+# ./aggregate_ideas.py --file=finalfile.txt > output.txt
+
 import argparse
 import json
 
