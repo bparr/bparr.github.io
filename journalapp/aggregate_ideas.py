@@ -17,7 +17,12 @@ def main():
   for i, line in enumerate(lines):
     if not line.strip():
       continue
-    parsed = json.loads(line)
+    try:
+      parsed = json.loads(line)
+    except:
+      print line
+      raise
+
     for idea in parsed:
       if idea['now'] in all_ideas and idea['value'] != all_ideas[idea['now']]:
         raise 'Mismatched idea values!'
