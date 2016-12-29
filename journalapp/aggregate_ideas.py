@@ -14,7 +14,9 @@ def main():
   args.file.close()
 
   all_ideas = {}
-  for line in lines:
+  for i, line in enumerate(lines):
+    if not line.strip():
+      continue
     parsed = json.loads(line)
     for idea in parsed:
       if idea['now'] in all_ideas and idea['value'] != all_ideas[idea['now']]:
