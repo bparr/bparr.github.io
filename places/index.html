@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Place searches</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script>
+      var geocoder;
+      var currentAddressIndex = 0;
+      var addresses = null;
+      var output = null;
+
+      function initMap() {
+        geocoder = new google.maps.Geocoder();
+
+        document.getElementById('my-div').style.display = 'block';
+      }
+
+      function callback(results, status) {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          if (results.length != 1) {
+            alert('Unexpected result from Google Maps API.');
+            return;
+          }
+
+          output[currentAddressIndex] = results[0].place_id;
+          currentAddressIndex++;
+          document.getElementById('my-textarea').value = output.join('\n');
+          geocodeAway();
+        }
+      }
+
+      function clicked() {
+        currentAddressIndex = 0;
+        addresses = document.getElementById('my-textarea').value.split('\n');
+        output = document.getElementById('my-textarea').value.split('\n');
+
+        geocodeAway();
+      }
+
+      function geocodeAway() {
+        if(currentAddressIndex >= addresses.length) {
+          return;
+        }
+        geocoder.geocode({'address': addresses[currentAddressIndex]}, callback);
+      }
+    </script>
+  </head>
+  <body>
+    <p>Paste address info, one per line, below, then convert to place id by clicking <button onclick=clicked()>Here</button></p>
+    <div style="display: none" id='my-div'><textarea id='my-textarea'rows='25' cols='100'></textarea></div>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCuAsP-qb3PbudKU7_hznW_PgElG1-tv-o&libraries=places&callback=initMap" async defer></script>
+  </body>
+</html>
+
