@@ -41,6 +41,9 @@
           document.getElementById('my-textarea').value = output.join('\n');
           geocodeAway();
         }
+        else {
+          window.setTimeout(geocodeAway, 10000);
+        }
       }
 
       function clicked() {
