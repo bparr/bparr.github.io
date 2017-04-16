@@ -27,13 +27,23 @@
         geocoder = new google.maps.Geocoder();
 
         document.getElementById('my-div').style.display = 'block';
+        var buttonText = 'Here';
+        if (window.location.search == '?4') {
+          buttonText += ' (convert to formatted address)';
+        }
+        document.getElementById('my-button').innerHTML = buttonText;
       }
 
       function callback(results, status) {
         if (status === google.maps.places.PlacesServiceStatus.OK) {
           var value = 'Unexpected result from Google Maps API.';
           if (results.length == 1) {
-            value = results[0].place_id
+            if (window.location.search == '?4') {
+              value = results[0].formatted_address;
+            }
+            else {
+              value = results[0].place_id
+            }
           }
 
           output[currentAddressIndex] = value;
@@ -63,7 +73,7 @@
     </script>
   </head>
   <body>
-    <p>Paste address info, one per line, below, then convert to place id by clicking <button onclick=clicked()>Here 3</button></p>
+    <p>Paste address info, one per line, below, then convert to place id by clicking <button id="my-button" onclick=clicked()></button></p>
     <div style="display: none" id='my-div'><textarea id='my-textarea'rows='25' cols='100'></textarea></div>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCuAsP-qb3PbudKU7_hznW_PgElG1-tv-o&libraries=places&callback=initMap" async defer></script>
   </body>
