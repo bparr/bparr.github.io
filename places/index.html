@@ -31,12 +31,12 @@
 
       function callback(results, status) {
         if (status === google.maps.places.PlacesServiceStatus.OK) {
-          if (results.length != 1) {
-            alert('Unexpected result from Google Maps API.');
-            return;
+          var value = 'Unexpected result from Google Maps API.';
+          if (results.length == 1) {
+            value = results[0].place_id
           }
 
-          output[currentAddressIndex] = results[0].place_id;
+          output[currentAddressIndex] = value;
           currentAddressIndex++;
           document.getElementById('my-textarea').value = output.join('\n');
           geocodeAway();
@@ -63,7 +63,7 @@
     </script>
   </head>
   <body>
-    <p>Paste address info, one per line, below, then convert to place id by clicking <button onclick=clicked()>Here 2</button></p>
+    <p>Paste address info, one per line, below, then convert to place id by clicking <button onclick=clicked()>Here 3</button></p>
     <div style="display: none" id='my-div'><textarea id='my-textarea'rows='25' cols='100'></textarea></div>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCuAsP-qb3PbudKU7_hznW_PgElG1-tv-o&libraries=places&callback=initMap" async defer></script>
   </body>
