@@ -54,7 +54,8 @@
 <script>
 // TODO convert to Closure style? With x['y'] syntax instead of x.y?
 // TODO add tests soon!
-var LOCAL_STORAGE_KEY = 'ideas';
+var LOCAL_STORAGE_IDEAS_KEY = 'ideas';
+var LOCAL_STORAGE_MUTE_KEY = 'mute';
 var pastIdeas = document.getElementById('past-ideas');
 var notificationContainer = document.getElementById('notification-container');
 
@@ -85,7 +86,7 @@ function createRemoveElementFn(element) {
 }
 
 function parseLocalStorage() {
-  var storedValue = localStorage.getItem(LOCAL_STORAGE_KEY);
+  var storedValue = localStorage.getItem(LOCAL_STORAGE_IDEAS_KEY);
   // TODO better handle error case. I'm currently too scared of
   //     overwriting ideas if for some reason they can't be parsed.
   var parsedValue = storedValue ? JSON.parse(storedValue) : null;
@@ -99,17 +100,18 @@ function notifyUser() {
   if (window.navigator.vibrate) {
     window.navigator.vibrate(100);
   }
-  // TODO get working on Android! I tried the "one audio element" idea
-  //     but there was a long delay between enter and play.
-  var audioNotification = document.createElement('audio');
-  audioNotification.autoplay = 'true';
-  // TODO try just one <audio> and just reseting to start here, no remove.
-  audioNotification.src = 'message-new-instant.ogg';
-  // TODO handle error cases.
-  // TODO is it ok to add event listener before adding to dom?
-  audioNotification.addEventListener('ended',
-      createRemoveElementFn(audioNotification));
-  notificationContainer.appendChild(audioNotification);
+
+  if (!localStorage.getItem(LOCAL_STORAGE_MUTE_KEY)) {
+    var audioNotification = document.createElement('audio');
+    audioNotification.autoplay = 'true';
+    // TODO try just one <audio> and just reseting to start here, no remove.
+    audioNotification.src = 'message-new-instant.ogg';
+    // TODO handle error cases.
+    // TODO is it ok to add event listener before adding to dom?
+    audioNotification.addEventListener('ended',
+        createRemoveElementFn(audioNotification));
+    notificationContainer.appendChild(audioNotification);
+  }
 }
 
 // TODO any consequences/caveats with putting angular + other in one <script>?
@@ -127,9 +129,16 @@ angular.module('journalApp', [])
     var lastSavedSearch = '';
 
     $scope.saveIdea = function() {
-      notifyUser();
 
       var ideaValue = $scope.idea;
+      if (ideaValue == '##mute') {
+        localStorage.setItem(LOCAL_STORAGE_MUTE_KEY, true);
+      }
+      if (ideaValue == '##unmute') {
+        localStorage.removeItem(LOCAL_STORAGE_MUTE_KEY)
+      }
+
+      notifyUser();
       $scope.idea = '';
       if (!ideaValue) {
         return;
@@ -158,7 +167,7 @@ angular.module('journalApp', [])
       var allIdeas = parseLocalStorage();
       allIdeas.push(idea);
       var allIdeasString = JSON.stringify(allIdeas);
-      localStorage.setItem(LOCAL_STORAGE_KEY, allIdeasString);
+      localStorage.setItem(LOCAL_STORAGE_IDEAS_KEY, allIdeasString);
 
       if (ideaValue == '##allideas') {
         $scope.idea = allIdeasString;
